@@ -1,0 +1,124 @@
+{
+  "domain": "adverse-event-qc.ingest",
+  "version": "v2026-01",
+  "note": "按 domain/cases 同构格式的脱敏合成案例集：每条给出形态、期望行为、basis 出处与 confidence。标识一律占位（<EXAMPLE_LOT> / 示例科室），不含姓名、住院号、诊断明细；272 号文口径下不产出排名/扣分/绩效联动。供 Phase 6 domain_correctness 与入站层验收对照。",
+  "cases": [
+    {
+      "id": "CASE-INGEST-001",
+      "title": "合计行被识别并计数，不入校验行集",
+      "category": "dirty_data.total_row",
+      "input": {"形态": "首列为「本月合计」、其余列为空或汇总数字的行", "来源": "inbox/<示例科室>/<period>.xlsx"},
+      "expected": {"skipped.total_rows": 1, "不进入 rows": true, "不静默丢行": true},
+      "basis": "spec.md 入站 A「合计行/全空行跳过并计数」；contract ingest.xlsx_reader.read_xlsx",
+      "confidence": "契约约定"
+    },
+    {
+      "id": "CASE-INGEST-002",
+      "title": "全空行被识别并计数",
+      "category": "dirty_data.empty_row",
+      "input": {"形态": "整行所有单元格均为 None / 空字符串 / 纯空白"},
+      "expected": {"skipped.empty_rows": 1, "skipped.total": ">=1"},
+      "basis": "task.json 任务 4「识别并跳过合计行与全空行且计数」",
+      "confidence": "契约约定"
+    },
+    {
+      "id": "CASE-INGEST-003",
+      "title": "GBK 乱码字节按 latin-1→gbk 回退还原中文",
+      "category": "dirty_data.encoding",
+      "input": {"形态": "GBK 字节被 latin-1 误解码的字符串（如「跌倒」的乱码形式）"},
+      "expected": {"还原为": "跌倒", "记录": "_encoding_fixed 含该列名"},
+      "basis": "contract ingest.xlsx_reader「单元格 GBK 乱码回退解码」；research.md 入站 B 字段规范",
+      "confidence": "契约约定"
+    },
+    {
+      "id": "CASE-INGEST-004",
+      "title": "生僻字（CJK 扩展区）读入不乱码不丢字",
+      "category": "dirty_data.rare_char",
+      "input": {"形态": "含非 BMP 生僻字的自由文本事件名"},
+      "expected": {"读入值": "与写入值逐字符一致"},
+      "basis": "task.json 任务 8「生僻字不乱码」专项断言",
+      "confidence": "契约约定"
+    },
+    {
+      "id": "CASE-INGEST-005",
+      "title": "空值可容忍：空值行仍留在有效行集",
+      "category": "dirty_data.empty_value",
+      "input": {"形态": "非必填列填 None / 空字符串的行"},
+      "expected": {"不跳过该行": true, "空值口径": "由规则条目 null_policy 决定"},
+      "basis": "spec.md 字段表 event_type_code/harm_desc 为 string|null；engine.rule_kinds.null_kind 三口径",
+      "confidence": "已核原文"
+    },
+    {
+      "id": "CASE-INGEST-006",
+      "title": "错列名进待确认清单，不猜测",
+      "category": "column_mapping.unmapped",
+      "input": {"形态": "表头含未登记列名「错列名_未登记备注」"},
+      "expected": {"pending_columns 含该表头": true, "含来源文件与出现次数": true, "不自动映射": true},
+      "basis": "spec.md 入站 A「未映射列进待确认清单，不猜」；errors.INGEST_UNMAPPED_COLUMN",
+      "confidence": "契约约定"
+    },
+    {
+      "id": "CASE-INGEST-007",
+      "title": "一表头映射多列时挂起并列候选",
+      "category": "column_mapping.ambiguous",
+      "input": {"形态": "表头「事件时间」同时映射到 occur_time 与 report_time"},
+      "expected": {"ambiguous 含两个候选": true, "相关规则置 skipped": true, "不任选其一": true},
+      "basis": "task.json 任务 5「同一表头映射到多列时挂起并列候选」；errors.INGEST_AMBIGUOUS_HEADER",
+      "confidence": "契约约定"
+    },
+    {
+      "id": "CASE-INGEST-008",
+      "title": "必填列缺失时整表判不可用",
+      "category": "column_mapping.required",
+      "input": {"形态": "表头缺 occur_time / report_time 或 dept_code"},
+      "expected": {"usable": false, "missing_required": "列出缺失列", "不产出半截结果": true},
+      "basis": "models.REQUIRED_COLUMNS；errors.INGEST_REQUIRED_COLUMN_MISSING",
+      "confidence": "契约约定"
+    },
+    {
+      "id": "CASE-INGEST-009",
+      "title": "重复投递只取最新版本并留被取代记录",
+      "category": "batch_splitter.superseded",
+      "input": {"形态": "同科室同期多份文件，文件名含版本号或 mtime 不同"},
+      "expected": {"batches 该键只一批": true, "superseded 记录含 superseded_by": true},
+      "basis": "task.json 任务 6「同一科室同期反复改表只取最新一版」",
+      "confidence": "契约约定"
+    },
+    {
+      "id": "CASE-INGEST-010",
+      "title": "科室名映射到多码时挂起，不猜",
+      "category": "batch_splitter.suspended",
+      "input": {"形态": "科室名在主数据中对应两个及以上 dept_code"},
+      "expected": {"suspended 含并列候选": true, "不进 batches": true},
+      "basis": "spec.md「科室名映射到多码或失败 → 挂起并列候选，不猜」；research.md 关键实体绑定",
+      "confidence": "已核原文"
+    },
+    {
+      "id": "CASE-INGEST-011",
+      "title": "平台不可达回落文件来源并标注本批仅含文件来源",
+      "category": "platform.fallback",
+      "input": {"形态": "GET /api/v1/incident-reports 连接失败/超时/5xx"},
+      "expected": {"note": "本批仅含文件来源", "按 (dept_code,period,incident_id) 去重": true},
+      "basis": "task.json 任务 7「平台不可达时回落文件来源并在批次摘要注明」；research.md 失败模式与降级",
+      "confidence": "契约约定"
+    },
+    {
+      "id": "CASE-INGEST-012",
+      "title": "跨期时间倒挂可被 time_order 规则捕获",
+      "category": "dirty_data.time_inversion",
+      "input": {"形态": "occur_time 落在下一期间且晚于 report_time"},
+      "expected": {"time_order.unexpected_count": ">=1", "样本定位到行": true},
+      "basis": "spec.md「occur_time ≤ report_time」；engine.rule_kinds.time_order",
+      "confidence": "已核原文"
+    },
+    {
+      "id": "CASE-INGEST-013",
+      "title": "等级允许集合 A–I（已核官方附件口径）",
+      "category": "ruleset.set_membership",
+      "input": {"形态": "等级列出现 Z 等非 A–I 取值"},
+      "expected": {"set_membership.unexpected_count": ">=1", "等级集合": "A-I"},
+      "basis": "《医疗质量安全不良事件分级分类标准》附件2（已核原文）；catalogs/rulesets/v2026-01.yaml AE-SEV-LEVEL",
+      "confidence": "已核原文"
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "kind": "not_null",
+  "entry": {
+    "id": "PAIR-NN",
+    "kind": "not_null",
+    "column": "incident_id",
+    "basis": "院内不良事件报告制度·记录标识必填（边界样例）",
+    "severity": "error",
+    "params": {}
+  },
+  "context": {},
+  "positive": {
+    "rows": [
+      {"_row_key": "p1", "_row_no": 1, "incident_id": "<EXAMPLE_LOT>-0001"},
+      {"_row_key": "p2", "_row_no": 2, "incident_id": "<EXAMPLE_LOT>-0002"}
+    ],
+    "expect": {"success": true, "unexpected_count": 0},
+    "note": "标识列均有非空占位值"
+  },
+  "negative": {
+    "rows": [
+      {"_row_key": "n1", "_row_no": 1, "incident_id": null},
+      {"_row_key": "n2", "_row_no": 2, "incident_id": ""},
+      {"_row_key": "n3", "_row_no": 3, "incident_id": "   "}
+    ],
+    "expect": {"success": false, "unexpected_count": 3},
+    "note": "三种空值口径：none / empty / blank 各计一条"
+  }
+}

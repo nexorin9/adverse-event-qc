@@ -1,0 +1,52 @@
+# 不良事件上报数据质检系统 —— 非敏感配置样例
+# 凭据（端点地址与令牌）一律走环境变量，本文件只放不敏感的运行参数。
+# 优先级：环境变量 > .env > 本文件。
+
+[ingest]
+# 科室上报表投递目录（相对项目根或绝对路径）
+inbox_dir = "inbox"
+# 期间格式：yyyy-mm
+period_format = "%Y-%m"
+# 单个单元格最大字符数，超出截断并记录（防止超长文本拖垮读入）
+max_cell_chars = 2000
+
+[engine]
+# 越界样本在界面/导出摘要中的展示条数上限；全量明细仍落盘可回查
+sample_display_limit = 20
+# 单条规则异常时是否隔离该条并继续跑其余规则
+isolate_rule_failure = true
+# 允许的未匹配比例阈值（低于该比例判通过但仍记录计数）
+allowed_unexpected_ratio = 0.0
+
+[attribution]
+# 单批送给模型的行数上限
+batch_size = 50
+# 并发上限（超限排队，不并发爆发）
+max_concurrency = 4
+# 模型不可达时退避重试次数（网络级与 5xx 可重试）
+max_retries = 2
+
+[writeback]
+# 写回退避重试次数；超过次数转 pending_writeback 待写队列
+max_retries = 3
+# 退避初始间隔秒数（按次数递增）
+backoff_base_seconds = 2
+
+[ledger]
+# 台账 SQLite 文件位置；留空表示使用用户数据目录下的默认位置（不落在项目目录内）
+db_path = ""
+# 行级明细保留周期（天）；审计事件与批次汇总长期保留
+detail_retention_days = 365
+
+[scale]
+# 规模验收单批耗时阈值（秒）：10 科室 × 3 期、≥500 行批次，单批不得超过该值
+# 可由 scripts/scale_check.py 的 --max-seconds 覆盖
+max_batch_seconds = 15
+
+[desktop]
+# 投递目录增量监听间隔（秒）
+watch_interval_seconds = 60
+# 平台定时轮询间隔（秒）
+poll_interval_seconds = 300
+# 托盘不可用时降级为「仅窗口」模式
+allow_tray_fallback = true

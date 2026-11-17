@@ -1,0 +1,279 @@
+{
+  "meta": {
+    "purpose": "7 种规则族 × 3 个边界用例（共 21 条），每条写明『期望行为 + 为什么这样期望』；由 tests/test_rule_edge_cases.py 参数化一次跑完，用例数与 tests/fixtures/EDGE_INDEX.md 索引表条数一致。",
+    "expectation_keys": {
+      "load_error": "期望 RuleEntry 构造期抛错，值 = 异常消息必须包含的子串",
+      "success": "期望 ExpectedResult.success",
+      "unexpected_count": "期望 ExpectedResult.unexpected_count（错误级越界条数）",
+      "info_findings_count": "期望 len(ExpectedResult.info_findings)（提示级发现条数）",
+      "observed": "期望 observed_value 中这些键逐项精确相等",
+      "observed_len": "期望 observed_value 中这些键（list）的长度逐项精确相等",
+      "sample_flags": "期望每条失败样本都含这些为真的标记"
+    }
+  },
+  "cases": [
+    {
+      "id": "SM-01",
+      "kind": "set_membership",
+      "case": "空 value_set（加载期拒绝）",
+      "expectation": {"load_error": "value_set"},
+      "why": "期望：条目在加载期被拒并点名 value_set，不进入执行期；原因：空集合若留到运行期，会把所有取值都判为越界，等于用一条坏口径污染整批结论，且质控员看不出是规则本身写错了。",
+      "rows": [{"_row_no": 1, "severity_level": "A"}],
+      "entry": {"id": "EDGE-SM-01", "kind": "set_membership", "column": "severity_level", "value_set": [], "basis": "边界用例·集合成员性空集合必须在加载期拒绝", "severity": "error", "params": {}}
+    },
+    {
+      "id": "SM-02",
+      "kind": "set_membership",
+      "case": "全空列：None / 空串 / 纯空白 + 混合类型",
+      "expectation": {"success": false, "unexpected_count": 4},
+      "why": "期望：4 行全部逐行计数为越界（3 种空值口径各 1 + 整数类型 1），success=false；原因：集合成员性不能静默吞掉空值或因为遇到非字符串类型崩溃，否则『这一列其实全是脏数据』会被漏报。",
+      "rows": [
+        {"_row_no": 1, "severity_level": null},
+        {"_row_no": 2, "severity_level": ""},
+        {"_row_no": 3, "severity_level": "   "},
+        {"_row_no": 4, "severity_level": 123}
+      ],
+      "entry": {"id": "EDGE-SM-02", "kind": "set_membership", "column": "severity_level", "value_set": ["A", "B"], "basis": "边界用例·空值三口径与混合类型逐行计数", "severity": "error", "params": {"normalize": ["trim", "width", "casefold"], "null_policy": "count_as_unexpected"}}
+    },
+    {
+      "id": "SM-03",
+      "kind": "set_membership",
+      "case": "全角/空格/大小写归一 + 超长文本",
+      "expectation": {"success": false, "unexpected_count": 2},
+      "why": "期望：全角带空格的 Ａ 与小写 a 归一后命中，越界值 Z 与超长文本共 2 条被定位；原因：取值比对必须先按参数归一，且样本保留原值；超长文本按内容判越界而不是被截断后丢失证据或触发异常。",
+      "rows": [
+        {"_row_no": 1, "severity_level": " Ａ "},
+        {"_row_no": 2, "severity_level": "a"},
+        {"_row_no": 3, "severity_level": "Z"},
+        {"_row_no": 4, "severity_level": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"}
+      ],
+      "entry": {"id": "EDGE-SM-03", "kind": "set_membership", "column": "severity_level", "value_set": ["A", "B"], "basis": "边界用例·归一后比对与超长文本", "severity": "error", "params": {"normalize": ["trim", "width", "casefold"]}}
+    },
+    {
+      "id": "NN-01",
+      "kind": "not_null",
+      "case": "空值三口径分别计数",
+      "expectation": {"success": false, "unexpected_count": 3, "observed": {"null_counts": {"none": 1, "empty": 1, "blank": 1}}},
+      "why": "期望：3 行空值全部计越界，且观察值里 none/empty/blank 各 1、非空行通过；原因：『没填』『填了空串』『填了空格』是三种不同数据形态，分开计数才能判断是系统导出问题还是人工填了空格。",
+      "rows": [
+        {"_row_no": 1, "incident_id": null},
+        {"_row_no": 2, "incident_id": ""},
+        {"_row_no": 3, "incident_id": "   "},
+        {"_row_no": 4, "incident_id": "EXAMPLE-0004"}
+      ],
+      "entry": {"id": "EDGE-NN-01", "kind": "not_null", "column": "incident_id", "value_set": [], "basis": "边界用例·空值三口径分别计数与定位", "severity": "error", "params": {}}
+    },
+    {
+      "id": "NN-02",
+      "kind": "not_null",
+      "case": "null_policy=allow：允许空但保留观察值",
+      "expectation": {"success": true, "unexpected_count": 0, "observed": {"null_counts": {"none": 1, "empty": 1, "blank": 1}}},
+      "why": "期望：判 success=true、越界数 0，但观察值仍记录三口径各 1；原因：允许空的规则不代表『没看见』，观察值留痕才能事后解释为什么这批没报缺失，口径可追溯而不是静默跳过。",
+      "rows": [
+        {"_row_no": 1, "incident_id": null},
+        {"_row_no": 2, "incident_id": ""},
+        {"_row_no": 3, "incident_id": "   "}
+      ],
+      "entry": {"id": "EDGE-NN-02", "kind": "not_null", "column": "incident_id", "value_set": [], "basis": "边界用例·允许空策略仍留观察值", "severity": "error", "params": {"null_policy": "allow"}}
+    },
+    {
+      "id": "NN-03",
+      "kind": "not_null",
+      "case": "列根本不存在（缺列）",
+      "expectation": {"success": false, "unexpected_count": 3, "observed": {"null_counts": {"none": 3, "empty": 0, "blank": 0}}},
+      "why": "期望：3 行按 None 口径逐行计越界，不抛 KeyError、不跳过；原因：列缺失时若静默通过，等于『表头错了所以整列免检』，会把最严重的结构问题伪装成合格。",
+      "rows": [
+        {"_row_no": 1, "incident_id": "EXAMPLE-0001"},
+        {"_row_no": 2, "incident_id": "EXAMPLE-0002"},
+        {"_row_no": 3, "incident_id": "EXAMPLE-0003"}
+      ],
+      "entry": {"id": "EDGE-NN-03", "kind": "not_null", "column": "root_cause_text", "value_set": [], "basis": "边界用例·缺列按空值口径计数而非崩溃", "severity": "error", "params": {}}
+    },
+    {
+      "id": "TF-01",
+      "kind": "type_format",
+      "case": "混合类型 + 多格式日期 + 无法解析值",
+      "expectation": {"success": false, "unexpected_count": 2},
+      "why": "期望：ISO 短横、斜杠、中文日期三种写法归一后通过，『未知』文本与整数类型 2 条被定位并注明期望格式；原因：科室表里日期写法混杂、偶尔混入数字或文字是常态，类型校验要能归一合法值并把非法值逐行说清楚，不能因类型混排崩溃。",
+      "rows": [
+        {"_row_no": 1, "occur_time": "2026-01-02 10:00:00"},
+        {"_row_no": 2, "occur_time": "2026/1/2 08:30"},
+        {"_row_no": 3, "occur_time": "2026年1月2日"},
+        {"_row_no": 4, "occur_time": "未知"},
+        {"_row_no": 5, "occur_time": 12345}
+      ],
+      "entry": {"id": "EDGE-TF-01", "kind": "type_format", "column": "occur_time", "value_set": [], "basis": "边界用例·多格式日期归一与非法值分类", "severity": "error", "params": {"type": "iso_datetime"}}
+    },
+    {
+      "id": "TF-02",
+      "kind": "type_format",
+      "case": "时间字段缺失（全空列）",
+      "expectation": {"success": false, "unexpected_count": 3, "observed": {"failure_reasons": {"empty": 3}}},
+      "why": "期望：3 行按 empty 原因计数，失败原因分类里 empty=3；原因：字段为空无法校验格式，必须按空值计入并分类，否则时间格式口径可以被『留空』整体绕过。",
+      "rows": [
+        {"_row_no": 1, "occur_time": null},
+        {"_row_no": 2, "occur_time": ""},
+        {"_row_no": 3, "occur_time": "   "}
+      ],
+      "entry": {"id": "EDGE-TF-02", "kind": "type_format", "column": "occur_time", "value_set": [], "basis": "边界用例·时间字段全空按空值计数", "severity": "error", "params": {"type": "iso_datetime"}}
+    },
+    {
+      "id": "TF-03",
+      "kind": "type_format",
+      "case": "超长文本 + 枚举类型",
+      "expectation": {"success": false, "unexpected_count": 2},
+      "why": "期望：A 通过，超长文本与空值共 2 条被定位；原因：超长自由文本落到枚举列是典型脏数据，应按内容判越界并保留原值，既不截断丢失证据也不因长度触发异常。",
+      "rows": [
+        {"_row_no": 1, "severity_level": "A"},
+        {"_row_no": 2, "severity_level": "QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ"},
+        {"_row_no": 3, "severity_level": ""}
+      ],
+      "entry": {"id": "EDGE-TF-03", "kind": "type_format", "column": "severity_level", "value_set": [], "basis": "边界用例·超长文本与枚举成员性", "severity": "error", "params": {"type": "enum", "enum": ["A", "B"]}}
+    },
+    {
+      "id": "TO-01",
+      "kind": "time_order",
+      "case": "时间字段半缺（一侧缺失）",
+      "expectation": {"success": false, "unexpected_count": 2},
+      "why": "期望：2 行半缺都逐行计越界；原因：occur_time 或 report_time 缺一侧时无法比较，若跳过则时序校验可以被『留空发生时间』绕过，必须显式定位缺失。",
+      "rows": [
+        {"_row_no": 1, "occur_time": "", "report_time": "2026-01-02 11:00:00"},
+        {"_row_no": 2, "occur_time": "2026-01-02 10:00:00", "report_time": null}
+      ],
+      "entry": {"id": "EDGE-TO-01", "kind": "time_order", "column": "occur_time", "value_set": [], "basis": "边界用例·时间字段半缺不跳过", "severity": "error", "params": {"left": "occur_time", "right": "report_time", "direction": "lte", "null_policy": "count_as_unexpected"}}
+    },
+    {
+      "id": "TO-02",
+      "kind": "time_order",
+      "case": "并列时间（occur == report）",
+      "expectation": {"success": true, "unexpected_count": 0, "observed": {"equal_pairs": 1}},
+      "why": "期望：判通过、越界数 0，但观察值 equal_pairs=1；原因：口径规定『发生时间不得晚于上报时间』，相等合法；把并列数记进观察值是为了事后能解释为什么这一行没被报倒挂，而不是悄悄忽略。",
+      "rows": [
+        {"_row_no": 1, "occur_time": "2026-01-02 10:00:00", "report_time": "2026-01-02 10:00:00"},
+        {"_row_no": 2, "occur_time": "2026-01-02 09:00:00", "report_time": "2026-01-02 11:00:00"}
+      ],
+      "entry": {"id": "EDGE-TO-02", "kind": "time_order", "column": "occur_time", "value_set": [], "basis": "边界用例·并列时间视为通过但计入观察值", "severity": "error", "params": {"left": "occur_time", "right": "report_time", "direction": "lte"}}
+    },
+    {
+      "id": "TO-03",
+      "kind": "time_order",
+      "case": "时间倒挂 + 格式无法解析",
+      "expectation": {"success": false, "unexpected_count": 2},
+      "why": "期望：倒挂行与不可解析行共 2 条被定位并各自带原因；原因：这是两类不同的失败（真倒挂 / 格式坏了），都要捕获，不能因为时间解析不出来就当作『没有倒挂』静默通过。",
+      "rows": [
+        {"_row_no": 1, "occur_time": "2026-01-05 12:00:00", "report_time": "2026-01-04 12:00:00"},
+        {"_row_no": 2, "occur_time": "昨天", "report_time": "明天"}
+      ],
+      "entry": {"id": "EDGE-TO-03", "kind": "time_order", "column": "occur_time", "value_set": [], "basis": "边界用例·时间倒挂与格式不可解析均捕获", "severity": "error", "params": {"left": "occur_time", "right": "report_time", "direction": "lte"}}
+    },
+    {
+      "id": "CCD-01",
+      "kind": "cross_column_derived",
+      "case": "派生列半缺（derived 侧为空 / 来源侧为空）",
+      "expectation": {"success": false, "unexpected_count": 2},
+      "why": "期望：2 行半缺都逐行计越界，标注缺哪一侧；原因：派生一致性需要两侧齐全才能判，半缺若跳过，科室只要把类别列留空就能绕过整条派生规则。",
+      "rows": [
+        {"_row_no": 1, "severity_level": "A", "severity_class": ""},
+        {"_row_no": 2, "severity_level": "", "severity_class": "Ⅳ"}
+      ],
+      "entry": {"id": "EDGE-CCD-01", "kind": "cross_column_derived", "column": "severity_level", "value_set": [], "basis": "边界用例·派生列半缺逐行定位", "severity": "error", "params": {"from_col": "severity_level", "derives": "severity_class"}}
+    },
+    {
+      "id": "CCD-02",
+      "kind": "cross_column_derived",
+      "case": "来源值无派生映射（目录外值）",
+      "expectation": {"success": false, "unexpected_count": 1},
+      "why": "期望：目录外来源值 Z 被显式标记『无派生映射』，合法映射行 A→Ⅳ 照常通过，共 1 条越界；原因：映射表里没有的值不能猜一个映射、也不能崩，必须留痕交人工核口径。",
+      "rows": [
+        {"_row_no": 1, "severity_level": "Z", "severity_class": "Ⅳ"},
+        {"_row_no": 2, "severity_level": "A", "severity_class": "Ⅳ"}
+      ],
+      "entry": {"id": "EDGE-CCD-02", "kind": "cross_column_derived", "column": "severity_level", "value_set": [], "basis": "边界用例·来源值无派生映射不猜不崩", "severity": "error", "params": {"from_col": "severity_level", "derives": "severity_class"}}
+    },
+    {
+      "id": "CCD-03",
+      "kind": "cross_column_derived",
+      "case": "映射不一致时两侧实际值都保留",
+      "expectation": {"success": false, "unexpected_count": 1, "observed_len": {"mismatches": 1}},
+      "why": "期望：判 1 条越界，且 observed_value.mismatches 里保留来源侧 A、派生侧 Ⅰ 与期望 Ⅳ 三项；原因：质控员要判断『改等级还是改类别』，只给一个『不一致』不够，必须把两侧实际值都摆出来。",
+      "rows": [
+        {"_row_no": 1, "severity_level": "A", "severity_class": "Ⅰ"}
+      ],
+      "entry": {"id": "EDGE-CCD-03", "kind": "cross_column_derived", "column": "severity_level", "value_set": [], "basis": "边界用例·派生不一致保留两侧实际值", "severity": "error", "params": {"from_col": "severity_level", "derives": "severity_class", "mapping": {"A": "Ⅳ", "I": "Ⅰ"}}}
+    },
+    {
+      "id": "AR-01",
+      "kind": "alias_resolution",
+      "case": "别名未命中（返回未命中而非空值）",
+      "expectation": {"success": false, "unexpected_count": 2, "sample_flags": {"needs_model_merge": true}},
+      "why": "期望：2 行都标『未命中』且每条样本 needs_model_merge=true；原因：别名表精确匹配只负责确定性归并，未命中是『待模型归并 / 待人工指定』的信号，不是空值也不是合规，静默当合规会把自由文本事件名全放过去。",
+      "rows": [
+        {"_row_no": 1, "event_type_text": "未登记的自由文本事件名"},
+        {"_row_no": 2, "event_type_text": "完全陌生的事件"}
+      ],
+      "entry": {"id": "EDGE-AR-01", "kind": "alias_resolution", "column": "event_type_text", "value_set": [], "basis": "边界用例·别名未命中返回未命中信号", "severity": "error", "params": {"from_col": "event_type_text"}},
+      "context": {"aliases": {"跌倒": "AE-CAT-08"}}
+    },
+    {
+      "id": "AR-02",
+      "kind": "alias_resolution",
+      "case": "别名命中（带空格归一直命中）",
+      "expectation": {"success": true, "unexpected_count": 0, "observed": {"alias_hits": 2}},
+      "why": "期望：2 行都命中、越界数 0、alias_hits=2；原因：别名表是规则层确定性基线，命中即直接判定、不调用模型；前后空格 / 全角差异归一后仍要命中，否则同一事件换个空格就被误送进模型浪费预算。",
+      "rows": [
+        {"_row_no": 1, "event_type_text": "跌倒"},
+        {"_row_no": 2, "event_type_text": " 给药错误 "}
+      ],
+      "entry": {"id": "EDGE-AR-02", "kind": "alias_resolution", "column": "event_type_text", "value_set": [], "basis": "边界用例·别名命中不调模型", "severity": "error", "params": {"from_col": "event_type_text"}},
+      "context": {"aliases": {"跌倒": "AE-CAT-08", "给药错误": "AE-CAT-02"}}
+    },
+    {
+      "id": "AR-03",
+      "kind": "alias_resolution",
+      "case": "空别名表（目录资产缺失）",
+      "expectation": {"success": false, "unexpected_count": 2, "observed": {"alias_table_size": 0}},
+      "why": "期望：全部行判未命中，观察值明确指出 alias_table_size=0；原因：别名目录为空等价于所有行待模型归并 / 待人工，属资产缺失而非数据合规，绝不能静默通过。",
+      "rows": [
+        {"_row_no": 1, "event_type_text": "跌倒"},
+        {"_row_no": 2, "event_type_text": "给药错误"}
+      ],
+      "entry": {"id": "EDGE-AR-03", "kind": "alias_resolution", "column": "event_type_text", "value_set": [], "basis": "边界用例·空别名表不静默通过", "severity": "error", "params": {"from_col": "event_type_text"}},
+      "context": {"aliases": {}}
+    },
+    {
+      "id": "CC-01",
+      "kind": "catalog_coverage",
+      "case": "缺失类目产生一条提示（提示级不混错误）",
+      "expectation": {"success": true, "unexpected_count": 0, "info_findings_count": 1},
+      "why": "期望：产生 1 条 info_findings，但 unexpected_count=0 且 success=true；原因：『本期间应出现的类目缺失』是反向覆盖提示，不是判定违规，不能混进错误越界数把通过率压低。",
+      "rows": [
+        {"_row_no": 1, "_dept_code": "D01", "event_type_code": "AE-CAT-01"}
+      ],
+      "entry": {"id": "EDGE-CC-01", "kind": "catalog_coverage", "column": "event_type_code", "value_set": [], "basis": "边界用例·缺失类目产生提示级发现", "severity": "info", "params": {"expected_categories": ["AE-CAT-01", "AE-CAT-02"], "column": "event_type_code"}}
+    },
+    {
+      "id": "CC-02",
+      "kind": "catalog_coverage",
+      "case": "全覆盖不产生提示",
+      "expectation": {"success": true, "unexpected_count": 0, "info_findings_count": 0},
+      "why": "期望：无任何提示、无越界、success=true；原因：应有类目都出现时不该制造噪音提示，否则质控员会对满屏提示脱敏，反而漏看真正缺的类目。",
+      "rows": [
+        {"_row_no": 1, "_dept_code": "D01", "event_type_code": "AE-CAT-01"},
+        {"_row_no": 2, "_dept_code": "D01", "event_type_code": "AE-CAT-02"}
+      ],
+      "entry": {"id": "EDGE-CC-02", "kind": "catalog_coverage", "column": "event_type_code", "value_set": [], "basis": "边界用例·全覆盖不产生提示", "severity": "info", "params": {"expected_categories": ["AE-CAT-01", "AE-CAT-02"], "column": "event_type_code"}}
+    },
+    {
+      "id": "CC-03",
+      "kind": "catalog_coverage",
+      "case": "不在适用科室范围不产生提示",
+      "expectation": {"success": true, "unexpected_count": 0, "info_findings_count": 0, "observed": {"out_of_scope": true}},
+      "why": "期望：0 条提示，观察值标 out_of_scope=true；原因：全覆盖要求只适用于条目声明的高风险科室，对范围外科室报错属于误报，观察值留痕说明『本批不在适用范围』便于回看。",
+      "rows": [
+        {"_row_no": 1, "_dept_code": "D01", "event_type_code": "AE-CAT-09"},
+        {"_row_no": 2, "_dept_code": "D01", "event_type_code": "AE-CAT-10"}
+      ],
+      "entry": {"id": "EDGE-CC-03", "kind": "catalog_coverage", "column": "event_type_code", "value_set": [], "basis": "边界用例·适用范围外科室不产生提示", "severity": "info", "params": {"expected_categories": ["AE-CAT-01", "AE-CAT-02"], "applicable_depts": ["D05"], "column": "event_type_code"}}
+    }
+  ]
+}

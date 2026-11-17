@@ -1,0 +1,28 @@
+{
+  "kind": "type_format",
+  "entry": {
+    "id": "PAIR-TF",
+    "kind": "type_format",
+    "column": "occur_time",
+    "basis": "院内不良事件报告制度·发生时间按 ISO8601 填报（边界样例）",
+    "severity": "error",
+    "params": {"type": "iso_datetime"}
+  },
+  "context": {},
+  "positive": {
+    "rows": [
+      {"_row_key": "p1", "_row_no": 1, "occur_time": "2026-01-02 10:00:00"},
+      {"_row_key": "p2", "_row_no": 2, "occur_time": "2026/01/03 08:30"}
+    ],
+    "expect": {"success": true, "unexpected_count": 0},
+    "note": "两种常见的 ISO8601 形态均可归一解析"
+  },
+  "negative": {
+    "rows": [
+      {"_row_key": "n1", "_row_no": 1, "occur_time": "不是时间"},
+      {"_row_key": "n2", "_row_no": 2, "occur_time": ""}
+    ],
+    "expect": {"success": false, "unexpected_count": 2},
+    "note": "无法解析的格式 + 字段为空"
+  }
+}

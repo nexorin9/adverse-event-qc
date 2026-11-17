@@ -1,0 +1,27 @@
+{
+  "kind": "catalog_coverage",
+  "entry": {
+    "id": "PAIR-CC",
+    "kind": "catalog_coverage",
+    "column": "event_type_code",
+    "basis": "院内不良事件报告制度·本期间应覆盖重点类目（提示级，边界样例）",
+    "severity": "info",
+    "params": {"expected_categories": ["AE-CAT-01", "AE-CAT-02"]}
+  },
+  "context": {},
+  "positive": {
+    "rows": [
+      {"_row_key": "p1", "_row_no": 1, "event_type_code": "AE-CAT-01"},
+      {"_row_key": "p2", "_row_no": 2, "event_type_code": "AE-CAT-02"}
+    ],
+    "expect": {"success": true, "unexpected_count": 0, "info_findings_count": 0},
+    "note": "应出现的重点类目本期间都出现，无缺失提示"
+  },
+  "negative": {
+    "rows": [
+      {"_row_key": "n1", "_row_no": 1, "event_type_code": "AE-CAT-01"}
+    ],
+    "expect": {"success": true, "unexpected_count": 0, "info_findings_count": 1},
+    "note": "反向覆盖：AE-CAT-02 缺失产生一条 info 提示，不计入错误越界数"
+  }
+}

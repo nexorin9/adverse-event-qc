@@ -1,0 +1,76 @@
+version: v2026-01
+meta:
+  effective_from: "2026-01"
+  note: 院内首版期望套件；等级允许集合取自已核官方附件，事件类别目录为院内自维护（经验推断·待核实）
+entries:
+  - id: AE-SEV-LEVEL
+    kind: set_membership
+    column: severity_level
+    value_set: [A, B, C, D, E, F, G, H, I]
+    basis: 《医疗质量安全不良事件分级分类标准》附件2（已核原文）
+    severity: error
+    params:
+      normalize: [trim, width, casefold]
+      null_policy: count_as_unexpected
+  - id: AE-DEPT-CODE
+    kind: set_membership
+    column: dept_code
+    value_set: [D01, D02, D03, D04, D05, D06, D07, D08, D09, D10]
+    basis: 院内科室主数据 catalogs/dept_master.csv
+    severity: error
+    params:
+      normalize: [trim, casefold]
+  - id: AE-INCIDENT-ID
+    kind: not_null
+    column: incident_id
+    basis: 院内不良事件报告制度·记录标识必填
+    severity: error
+    params:
+      null_policy: count_as_unexpected
+  - id: AE-OCCUR-FMT
+    kind: type_format
+    column: occur_time
+    basis: 院内不良事件报告制度·发生时间按 ISO8601 填报
+    severity: error
+    params:
+      type: iso_datetime
+  - id: AE-REPORT-FMT
+    kind: type_format
+    column: report_time
+    basis: 院内不良事件报告制度·上报时间按 ISO8601 填报
+    severity: error
+    params:
+      type: iso_datetime
+  - id: AE-TIME-ORDER
+    kind: time_order
+    column: occur_time
+    basis: 院内不良事件报告制度·发生时间不得晚于上报时间
+    severity: error
+    params:
+      left: occur_time
+      right: report_time
+      direction: lte
+      tolerance_seconds: 0
+  - id: AE-CLASS-DERIVED
+    kind: cross_column_derived
+    column: severity_level
+    basis: 《医疗质量安全不良事件分级分类标准》附件2·等级与类别派生关系
+    severity: error
+    params:
+      from_col: severity_level
+      derives: severity_class
+  - id: AE-ALIAS-RESOLUTION
+    kind: alias_resolution
+    column: event_type_text
+    basis: 院内别名表 catalogs/aliases.csv（人工审核后生效）
+    severity: error
+    params:
+      from_col: event_type_text
+  - id: AE-CATALOG-COVERAGE
+    kind: catalog_coverage
+    column: event_type_code
+    basis: 院内不良事件报告制度·高风险科室本期间应覆盖重点类目（提示级）
+    severity: info
+    params:
+      expected_categories: [AE-CAT-01, AE-CAT-02, AE-CAT-03]
+      applicable_depts: [D05, D10]

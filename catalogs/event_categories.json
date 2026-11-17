@@ -1,0 +1,16 @@
+{
+  "source": "院内自维护目录（全国无统一的不良事件事件名编码表）",
+  "confidence": "经验推断·待核实",
+  "note": "本目录按公开二手来源可见的八大类构造，未在本次核到的官方附件页内；等级集合另以已核原文 A–I 为准。目录可由质控科人工审核后维护。",
+  "version": "v2026-01",
+  "categories": [
+    {"code": "AE-CAT-01", "name": "医疗事件", "family": "clinical", "basis": "院内自维护目录·医疗事件类（经验推断·待核实）", "confidence": "经验推断·待核实"},
+    {"code": "AE-CAT-02", "name": "药品事件", "family": "medication", "basis": "院内自维护目录·药品事件类（经验推断·待核实）", "confidence": "经验推断·待核实"},
+    {"code": "AE-CAT-03", "name": "护理事件", "family": "nursing", "basis": "院内自维护目录·护理事件类（经验推断·待核实）", "confidence": "经验推断·待核实"},
+    {"code": "AE-CAT-04", "name": "医学技术检查事件", "family": "exam", "basis": "院内自维护目录·医学技术检查事件类（经验推断·待核实）", "confidence": "经验推断·待核实"},
+    {"code": "AE-CAT-05", "name": "输血事件", "family": "transfusion", "basis": "院内自维护目录·输血事件类（经验推断·待核实）", "confidence": "经验推断·待核实"},
+    {"code": "AE-CAT-06", "name": "医院感染事件", "family": "infection", "basis": "院内自维护目录·医院感染事件类（经验推断·待核实）", "confidence": "经验推断·待核实"},
+    {"code": "AE-CAT-07", "name": "医疗器械事件", "family": "device", "basis": "院内自维护目录·医疗器械事件类（经验推断·待核实）", "confidence": "经验推断·待核实"},
+    {"code": "AE-CAT-08", "name": "安全管理与意外伤害事件", "family": "safety", "basis": "院内自维护目录·安全管理与意外伤害事件类（经验推断·待核实）", "confidence": "经验推断·待核实"}
+  ]
+}

@@ -1,0 +1,65 @@
+# ---- 密钥与本地配置 ----
+.env
+.env.*
+!.env.example
+*.secret
+*.key
+*.pem
+
+# ---- 虚拟环境 ----
+venv/
+.venv/
+env/
+ENV/
+
+# ---- 构建与依赖产物 ----
+node_modules/
+target/
+dist/
+build/
+coverage/
+.next/
+.nuxt/
+*.egg-info/
+*.egg
+wheelhouse/
+
+# ---- 运行时数据与缓存 ----
+data/
+logs/
+out/
+tmp/
+temp/
+.cache/
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
+
+# ---- Python 缓存与工具缓存 ----
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.coveragerc
+htmlcov/
+
+# ---- 临时与日志文件 ----
+*.log
+*.tmp
+*.temp
+*.out
+*.bak
+*.swp
+.DS_Store
+Thumbs.db
+
+# ---- round 元数据（不得进入发布仓库）----
+score.json
+progress.txt
+task.json

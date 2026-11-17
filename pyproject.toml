@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "adverse-event-qc"
+version = "0.1.0"
+description = "不良事件上报数据质检系统"
+readme = "README.md"
+requires-python = ">=3.10"
+# 运行依赖统一维护在 requirements.txt，安装时用 --no-deps 避免两处漂移
+dependencies = []
+
+[project.scripts]
+ae-qc = "ae_qc.cli:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["ae_qc*"]
+namespaces = true
+
+[tool.pytest.ini_options]
+# 无需先安装即可跑测试：src 目录直接进 sys.path
+pythonpath = ["src"]
+testpaths = ["tests"]

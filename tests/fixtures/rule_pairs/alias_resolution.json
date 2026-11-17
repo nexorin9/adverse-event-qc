@@ -1,0 +1,29 @@
+{
+  "kind": "alias_resolution",
+  "entry": {
+    "id": "PAIR-AR",
+    "kind": "alias_resolution",
+    "column": "event_type_text",
+    "basis": "院内别名表 catalogs/aliases.csv（人工审核后生效）· 边界样例",
+    "severity": "error",
+    "params": {"from_col": "event_type_text"}
+  },
+  "context": {
+    "aliases": {"跌倒": "AE-CAT-08", "给药错误": "AE-CAT-02"}
+  },
+  "positive": {
+    "rows": [
+      {"_row_key": "p1", "_row_no": 1, "event_type_text": "跌倒"},
+      {"_row_key": "p2", "_row_no": 2, "event_type_text": "给药错误"}
+    ],
+    "expect": {"success": true, "unexpected_count": 0},
+    "note": "别名表精确命中，规则层确定性归并，不调模型"
+  },
+  "negative": {
+    "rows": [
+      {"_row_key": "n1", "_row_no": 1, "event_type_text": "未登记的自由文本事件名"}
+    ],
+    "expect": {"success": false, "unexpected_count": 1},
+    "note": "别名未命中 → 需模型归并/人工指定，不是空值"
+  }
+}

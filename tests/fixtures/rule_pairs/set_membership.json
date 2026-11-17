@@ -1,0 +1,29 @@
+{
+  "kind": "set_membership",
+  "entry": {
+    "id": "PAIR-SET",
+    "kind": "set_membership",
+    "column": "severity_level",
+    "value_set": ["A", "B", "I"],
+    "basis": "《医疗质量安全不良事件分级分类标准》附件2（已核原文）· 边界样例",
+    "severity": "error",
+    "params": {}
+  },
+  "context": {},
+  "positive": {
+    "rows": [
+      {"_row_key": "p1", "_row_no": 1, "severity_level": "A"},
+      {"_row_key": "p2", "_row_no": 2, "severity_level": "I"}
+    ],
+    "expect": {"success": true, "unexpected_count": 0},
+    "note": "等级取值全部落在允许集合内"
+  },
+  "negative": {
+    "rows": [
+      {"_row_key": "n1", "_row_no": 1, "severity_level": "Z"},
+      {"_row_key": "n2", "_row_no": 2, "severity_level": ""}
+    ],
+    "expect": {"success": false, "unexpected_count": 2},
+    "note": "越界值 Z + 空值（null_policy 默认 count_as_unexpected）"
+  }
+}

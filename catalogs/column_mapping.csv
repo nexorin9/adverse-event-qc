@@ -1,0 +1,26 @@
+﻿header,standard_column,note
+incident_id,incident_id,标准英文表头
+事件编号,incident_id,院内常见中文表头
+dept_code,dept_code,标准英文表头
+科室编码,dept_code,院内常见中文表头
+event_type_text,event_type_text,标准英文表头
+事件名称,event_type_text,自由文本事件名
+event_type_code,event_type_code,标准英文表头
+事件类别编码,event_type_code,院内分类目录编码
+severity_level,severity_level,标准英文表头
+严重程度等级,severity_level,等级 A–I
+severity_class,severity_class,标准英文表头
+事件类别,severity_class,类别 Ⅰ–Ⅳ（派生列）
+occur_time,occur_time,标准英文表头
+发生时间,occur_time,ISO8601
+report_time,report_time,标准英文表头
+上报时间,report_time,ISO8601
+reporter_role,reporter_role,标准英文表头
+上报人角色,reporter_role,仅角色不落姓名
+harm_desc,harm_desc,标准英文表头
+后果描述,harm_desc,自由文本
+root_cause_text,root_cause_text,标准英文表头
+初步原因,root_cause_text,自由文本
+category_family,category_family,辅助列·类别族（一致性矩阵用）
+事件时间,occur_time,歧义示范：同一表头可能指发生时间
+事件时间,report_time,歧义示范：同一表头也可能指上报时间（挂起并列候选，需人工指定）

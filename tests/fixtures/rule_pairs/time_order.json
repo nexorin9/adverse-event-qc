@@ -1,0 +1,27 @@
+{
+  "kind": "time_order",
+  "entry": {
+    "id": "PAIR-TO",
+    "kind": "time_order",
+    "column": "occur_time",
+    "basis": "院内不良事件报告制度·发生时间不得晚于上报时间（边界样例）",
+    "severity": "error",
+    "params": {"left": "occur_time", "right": "report_time", "direction": "lte"}
+  },
+  "context": {},
+  "positive": {
+    "rows": [
+      {"_row_key": "p1", "_row_no": 1, "occur_time": "2026-01-02 10:00:00", "report_time": "2026-01-02 11:00:00"},
+      {"_row_key": "p2", "_row_no": 2, "occur_time": "2026-01-03 09:00:00", "report_time": "2026-01-03 09:00:00"}
+    ],
+    "expect": {"success": true, "unexpected_count": 0},
+    "note": "发生时间早于上报时间；并列时间视为通过"
+  },
+  "negative": {
+    "rows": [
+      {"_row_key": "n1", "_row_no": 1, "occur_time": "2026-01-05 12:00:00", "report_time": "2026-01-04 12:00:00"}
+    ],
+    "expect": {"success": false, "unexpected_count": 1},
+    "note": "跨期时间倒挂：发生时间晚于上报时间"
+  }
+}
